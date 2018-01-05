@@ -1,26 +1,12 @@
-FROM alpine:3.7
+FROM phusion/baseimage:0.9.22
 
-# Upgrade (just in case there are security updates)
-RUN apk update -v \
-    && apk upgrade -v --no-cache
-
-# Install Build Deps
-RUN apk add \
-        ca-certificates \
-        openssl \
-        libffi-dev \
-        python2 \
-        py2-pip \
-        py2-yaml \
-        tzdata \
-        wget \
-        git \
-        bash \
-    && mkdir -p /opt/loggen
-# gcc alpine-sdk build-base
+RUN apt-get update -y && \
+    apt-get install python python-pip git -y && \
+    rm -rf /var/lib/apt/lists/*
 
 # Get the project
 RUN git clone https://github.com/kiritbasu/Fake-Apache-Log-Generator.git /opt/loggen && \
     cd /opt/loggen && \
     pip install -r requirements.txt
 
+ENTRYPOINT ["python /opt/loggen/apache-fake-log-gen.py -n 0 -o CONSOLE -s 1"]
