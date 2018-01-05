@@ -1,0 +1,21 @@
+# Host Stuffs
+http:
+  host: "0.0.0.0"
+
+# Paths
+path:
+  config: /usr/share/logstash/pipeline
+
+# Node Settings
+node:
+  name: angry-elk-logstash
+
+# Set a proper batch size and delay (with defaults)
+pipeline:
+  batch:
+    size: ${BATCH_SIZE:125}
+    delay: ${BATCH_DELAY:5}
+
+# Enable X-Pack Monitoring (since it's free)
+xpack.monitoring.enabled: true
+xpack.monitoring.elasticsearch.url: http://elasticsearch:9200
