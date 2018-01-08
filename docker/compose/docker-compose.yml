@@ -1,5 +1,20 @@
 version: '3.2'
 
+# Volumes
+volumes:
+  esdata1:
+    driver: local
+  esdata2:
+    driver: local
+  esdata3:
+    driver: local
+
+# Networks
+networks:
+  elk:
+    external: true
+
+# Services
 services:
   # Node 1
   elasticsearch:
@@ -32,64 +47,65 @@ services:
     networks:
       - elk
 
-  # Node 2
-  elasticsearch-2:
-    image: angry-elk/elasticsearch
-    container_name: elasticsearch-2
-    environment:
-      - cluster.name=angry-elk-es
-      - node.name=es-2
-      #- bootstrap.memory_lock=true
-      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
-      - ELASTIC_PASSWORD=angry-elk
-      - "discovery.zen.ping.unicast.hosts=elasticsearch,elasticsearch-3"
-    stop_grace_period: 1m30s
-    deploy:
-      replicas: 1
-      resources:
-        limits:
-          memory: 1G
-      restart_policy:
-        condition: any
-        delay: 30s
-    ulimits:
-      memlock:
-        soft: -1
-        hard: -1
-    volumes:
-      - esdata2:/usr/share/elasticsearch/data
-    networks:
-      - elk
+#  # Node 2
+#  elasticsearch-2:
+#    image: angry-elk/elasticsearch
+#    container_name: elasticsearch-2
+#    environment:
+#      - cluster.name=angry-elk-es
+#      - node.name=es-2
+#      #- bootstrap.memory_lock=true
+#      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+#      - ELASTIC_PASSWORD=angry-elk
+#      - "discovery.zen.ping.unicast.hosts=elasticsearch,elasticsearch-3"
+#    stop_grace_period: 1m30s
+#    deploy:
+#      replicas: 1
+#      resources:
+#        limits:
+#          memory: 1G
+#      restart_policy:
+#        condition: any
+#        delay: 30s
+#    ulimits:
+#      memlock:
+#        soft: -1
+#        hard: -1
+#    volumes:
+#      - esdata2:/usr/share/elasticsearch/data
+#    networks:
+#      - elk
+#
+#  # Node 3
+#  elasticsearch-3:
+#    image: angry-elk/elasticsearch
+#    container_name: elasticsearch-3
+#    environment:
+#      - cluster.name=angry-elk-es
+#      - node.name=es-3
+#      #- bootstrap.memory_lock=true
+#      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+#      - ELASTIC_PASSWORD=angry-elk
+#      - "discovery.zen.ping.unicast.hosts=elasticsearch,elasticsearch-2"
+#    stop_grace_period: 1m30s
+#    deploy:
+#      replicas: 1
+#      resources:
+#        limits:
+#          memory: 1G
+#      restart_policy:
+#        condition: any
+#        delay: 30s
+#    ulimits:
+#      memlock:
+#        soft: -1
+#        hard: -1
+#    volumes:
+#      - esdata3:/usr/share/elasticsearch/data
+#    networks:
+#      - elk
 
-  # Node 3
-  elasticsearch-3:
-    image: angry-elk/elasticsearch
-    container_name: elasticsearch-3
-    environment:
-      - cluster.name=angry-elk-es
-      - node.name=es-3
-      #- bootstrap.memory_lock=true
-      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
-      - ELASTIC_PASSWORD=angry-elk
-      - "discovery.zen.ping.unicast.hosts=elasticsearch,elasticsearch-2"
-    stop_grace_period: 1m30s
-    deploy:
-      replicas: 1
-      resources:
-        limits:
-          memory: 1G
-      restart_policy:
-        condition: any
-        delay: 30s
-    ulimits:
-      memlock:
-        soft: -1
-        hard: -1
-    volumes:
-      - esdata3:/usr/share/elasticsearch/data
-    networks:
-      - elk
-
+  # Kibana
   kibana:
     image: angry-elk/kibana
     container_name: kibana
@@ -97,7 +113,7 @@ services:
       - ELASTICSEARCH_USERNAME=kibana
       - ELASTICSEARCH_PASSWORD=angry-elk
     depends_on: ['elasticsearch']
-    ports: ['127.0.0.1:5601:5601']
+    ports: ['5601:5601']
     deploy:
       replicas: 1
       resources:
@@ -109,16 +125,152 @@ services:
     networks:
       - elk
 
-# Volumes
-volumes:
-  esdata1:
-    driver: local
-  esdata2:
-    driver: local
-  esdata3:
-    driver: local
+  # Logstash
+  logstash:
+    image: angry-elk/logstash
+    depends_on: ['elasticsearch']
+    networks:
+    - elk
+    environment:
+      # This tells logspout not to capture logs from this container
+      LOGSPOUT: 'ignore'
+    deploy:
+      replicas: 1
+      resources:
+        limits:
+          cpus: "2"
+          memory: 4G
+      restart_policy:
+        condition: any
+        delay: 30s
+      placement:
+        constraints:
+        - node.role == worker
 
-# Networks
-networks:
-  elk:
-    external: true
+  # Logspout
+  logspout:
+    depends_on: ['logstash']
+    image: angry-elk/logspout
+
+    networks:
+    - elk
+
+    environment:
+      ROUTE_URIS: 'logstash+tcp://logstash:5000'
+      LOGSTASH_FIELDS: "type=docker"
+      DOCKER_LABELS: "true"
+      SYSLOG_FORMAT: "rfc3164"
+      RETRY_STARTUP: "true"
+
+    volumes:
+    - /var/run/docker.sock:/var/run/docker.sock
+
+    depends_on:
+    - logstash
+
+    deploy:
+      mode: global
+      resources:
+        limits:
+          cpus: "0.4"
+          memory: 512M
+        reservations:
+          cpus: "0.1"
+      restart_policy:
+        condition: any
+        delay: 30s
+
+#  # Below Here are from https://github.com/elastic/stack-docker
+#  auditbeat:
+#    image: docker.elastic.co/beats/auditbeat:${TAG}
+#    cap_add: ['AUDIT_CONTROL', 'AUDIT_READ']
+#    # Auditbeat must run in the main process namespace.
+#    pid: host
+#    networks: ['elk']
+#    depends_on: ['elasticsearch']
+#
+#  filebeat:
+#    image: docker.elastic.co/beats/filebeat:${TAG}
+#    # If the host system has logs at "/var/log", mount them at "/mnt/log"
+#    # inside the container, where Filebeat can find them.
+#    volumes: ['/var/log:/mnt/log:ro']
+#    networks: ['elk']
+#    depends_on: ['elasticsearch', 'setup_filebeat']
+#
+#  heartbeat:
+#    image: docker.elastic.co/beats/heartbeat:${TAG}
+#    networks: ['elk']
+#    depends_on: ['elasticsearch', 'setup_heartbeat']
+#
+#  metricbeat:
+#    image: docker.elastic.co/beats/metricbeat:${TAG}
+#    # The commented sections below enable Metricbeat to monitor the Docker host,
+#    # rather than the Metricbeat container. It's problematic with Docker for
+#    # Windows, however, since "/proc", "/sys" etc. don't exist on Windows.
+#    # The same likely applies to OSX (needs testing).
+#    volumes:
+#       - /proc:/hostfs/proc:ro
+#       - /sys/fs/cgroup:/hostfs/sys/fs/cgroup:ro
+#       - /:/hostfs:ro
+#    command: metricbeat -e -system.hostfs=/hostfs
+#    networks: ['elk']
+#    depends_on: ['elasticsearch', 'setup_metricbeat']
+#
+#  packetbeat:
+#    image: docker.elastic.co/beats/packetbeat:${TAG}
+#    # Packetbeat needs some elevated privileges to capture network traffic.
+#    # We'll grant them with POSIX capabilities.
+#    cap_add: ['NET_RAW', 'NET_ADMIN']
+#    # Use "host mode" networking to allow Packetbeat to capture traffic from
+#    # the real network interface on the host, rather than being isolated to the
+#    # container's virtual interface.
+#    network_mode: host
+#    # Since we did that, Packetbeat is not part of the "stack" Docker network
+#    # that the other containers are connected to, and thus can't resolve the
+#    # hostname "elasticsearch". Instead, we'll tell it to find Elasticsearch
+#    # on "localhost", which is the Docker host machine in this context.
+#    command: packetbeat -v -e -E output.elasticsearch.hosts='["localhost:9200"]'
+#    depends_on: ['elasticsearch']
+#
+#  # Setup Containers
+#  setup_auditbeat:
+#    image: docker.elastic.co/beats/auditbeat:${TAG}
+#    volumes: ['./scripts/setup-beat.sh:/usr/local/bin/setup-beat.sh:ro']
+#    command: /usr/local/bin/setup-beat.sh auditbeat
+#    environment: ['ELASTIC_PASSWORD=angry-elk']
+#    networks: ['elk']
+#    depends_on: ['kibana']
+#
+#  setup_filebeat:
+#    image: docker.elastic.co/beats/filebeat:${TAG}
+#    volumes: ['./scripts/setup-beat.sh:/usr/local/bin/setup-beat.sh:ro']
+#    command: /usr/local/bin/setup-beat.sh filebeat
+#    environment: ['ELASTIC_PASSWORD=angry-elk']
+#    networks: ['elk']
+#    depends_on: ['kibana']
+#
+#  setup_heartbeat:
+#    image: docker.elastic.co/beats/heartbeat:${TAG}
+#    volumes: ['./scripts/setup-beat.sh:/usr/local/bin/setup-beat.sh:ro']
+#    command: /usr/local/bin/setup-beat.sh heartbeat
+#    environment: ['ELASTIC_PASSWORD=angry-elk']
+#    networks: ['elk']
+#    depends_on: ['kibana']
+#
+#  setup_metricbeat:
+#    image: docker.elastic.co/beats/metricbeat:${TAG}
+#    volumes: ['./scripts/setup-beat.sh:/usr/local/bin/setup-beat.sh:ro']
+#    command: /usr/local/bin/setup-beat.sh metricbeat
+#    environment: ['ELASTIC_PASSWORD=angry-elk']
+#    networks: ['elk']
+#    depends_on: ['kibana']
+#
+#  setup_packetbeat:
+#    image: docker.elastic.co/beats/packetbeat:${TAG}
+#    cap_add: ['NET_RAW', 'NET_ADMIN']
+#    volumes: ['./scripts/setup-beat.sh:/usr/local/bin/setup-beat.sh:ro']
+#    command: /usr/local/bin/setup-beat.sh packetbeat
+#    environment: ['ELASTIC_PASSWORD=angry-elk']
+#    networks: ['elk']
+#    depends_on: ['kibana']
+#
