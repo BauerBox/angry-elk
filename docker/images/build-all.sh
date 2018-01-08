@@ -3,9 +3,6 @@
 # Image Prefix
 prefix="angry-elk"
 
-# Log
-echo "Build logs will be recorded to: build.log"
-
 # Iterate directory
 for path in ./*; do
     # Skip if it's not a directory
@@ -21,10 +18,9 @@ for path in ./*; do
     echo "Building image: ${prefix}/${image}"
 
     # Run
-    docker build -t "${prefix}/${image}" "${path}" >> build.log
+    docker build -t "${prefix}/${image}" "${path}"
     if [ $? -ne 0 ]; then
         echo "> Image ${prefix}/${image} failed to build!"
-        echo "> Check build.log for details"
     else
         echo "> Image built successfully!"
     fi
