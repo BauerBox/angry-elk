@@ -3,12 +3,9 @@ path:
   # Where to store data
   data:
     - /usr/share/elasticsearch/data
-  # Where to store logs
-  logs:
-    - /usr/share/elasticsearch/logs
 
 # Cluster Config
-custer:
+cluster:
   # Cluster Name
   name: angry-elk-es
 

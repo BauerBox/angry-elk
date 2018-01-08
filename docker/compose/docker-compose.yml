@@ -3,12 +3,15 @@ version: '3.2'
 services:
   # Node 1
   elasticsearch:
-    image: docker.elastic.co/elasticsearch/elasticsearch:6.1.1
+    image: angry-elk/elasticsearch
     container_name: elasticsearch
     environment:
-      - cluster.name=docker-cluster
-      - bootstrap.memory_lock=true
+      - cluster.name=angry-elk-es
+      - node.name=es-1
+      #- bootstrap.memory_lock=true
       - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+      - ELASTIC_PASSWORD=angry-elk
+      - "discovery.zen.ping.unicast.hosts=elasticsearch-2,elasticsearch-3"
     stop_grace_period: 1m30s
     deploy:
       replicas: 1
@@ -31,13 +34,15 @@ services:
 
   # Node 2
   elasticsearch-2:
-    image: docker.elastic.co/elasticsearch/elasticsearch:6.1.1
+    image: angry-elk/elasticsearch
     container_name: elasticsearch-2
     environment:
-      - cluster.name=docker-cluster
-      - bootstrap.memory_lock=true
+      - cluster.name=angry-elk-es
+      - node.name=es-2
+      #- bootstrap.memory_lock=true
       - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
-      - "discovery.zen.ping.unicast.hosts=elasticsearch"
+      - ELASTIC_PASSWORD=angry-elk
+      - "discovery.zen.ping.unicast.hosts=elasticsearch,elasticsearch-3"
     stop_grace_period: 1m30s
     deploy:
       replicas: 1
@@ -58,13 +63,15 @@ services:
 
   # Node 3
   elasticsearch-3:
-    image: angryelk/elasticsearch
+    image: angry-elk/elasticsearch
     container_name: elasticsearch-3
     environment:
-      - cluster.name=docker-cluster
-      - bootstrap.memory_lock=true
+      - cluster.name=angry-elk-es
+      - node.name=es-3
+      #- bootstrap.memory_lock=true
       - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
-      - "discovery.zen.ping.unicast.hosts=elasticsearch"
+      - ELASTIC_PASSWORD=angry-elk
+      - "discovery.zen.ping.unicast.hosts=elasticsearch,elasticsearch-2"
     stop_grace_period: 1m30s
     deploy:
       replicas: 1
@@ -80,6 +87,25 @@ services:
         hard: -1
     volumes:
       - esdata3:/usr/share/elasticsearch/data
+    networks:
+      - elk
+
+  kibana:
+    image: angry-elk/kibana
+    container_name: kibana
+    environment:
+      - ELASTICSEARCH_USERNAME=kibana
+      - ELASTICSEARCH_PASSWORD=angry-elk
+    depends_on: ['elasticsearch']
+    ports: ['127.0.0.1:5601:5601']
+    deploy:
+      replicas: 1
+      resources:
+        limits:
+          memory: 1G
+      restart_policy:
+        condition: any
+        delay: 30s
     networks:
       - elk
 
