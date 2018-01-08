@@ -19,3 +19,4 @@ pipeline:
 # Enable X-Pack Monitoring (since it's free)
 xpack.monitoring.enabled: true
 xpack.monitoring.elasticsearch.url: http://elasticsearch:9200
+xpack.monitoring.elasticsearch.password: angry-elk
