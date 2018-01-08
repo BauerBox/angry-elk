@@ -1,0 +1,30 @@
+version: '3.2'
+
+# Networks
+networks:
+  elk:
+    external: true
+
+# Services
+services:
+  kibana:
+    image: angry-elk/kibana
+    container_name: kibana
+    environment:
+      - ELASTICSEARCH_USERNAME=kibana
+      - ELASTICSEARCH_PASSWORD=angry-elk
+    depends_on: ['elasticsearch']
+    ports: ['5601:5601']
+    deploy:
+      placement:
+        constraints:
+        - node.role == worker
+      replicas: 1
+      resources:
+        limits:
+          memory: 1G
+      restart_policy:
+        condition: any
+        delay: 30s
+    networks:
+      - elk

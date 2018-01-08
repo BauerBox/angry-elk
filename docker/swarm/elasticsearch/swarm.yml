@@ -19,7 +19,6 @@ services:
   # Node 1
   elasticsearch:
     image: angry-elk/elasticsearch
-    container_name: elasticsearch
     environment:
       - cluster.name=angry-elk-es
       - node.name=es-1
@@ -54,7 +53,6 @@ services:
   # Node 2
   elasticsearch-2:
     image: angry-elk/elasticsearch
-    container_name: elasticsearch-2
     environment:
       - cluster.name=angry-elk-es
       - node.name=es-2
@@ -87,7 +85,6 @@ services:
   # Node 3
   elasticsearch-3:
     image: angry-elk/elasticsearch
-    container_name: elasticsearch-3
     environment:
       - cluster.name=angry-elk-es
       - node.name=es-3
