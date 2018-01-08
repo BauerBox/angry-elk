@@ -12,6 +12,8 @@ services:
     environment:
       - ELASTICSEARCH_USERNAME=kibana
       - ELASTICSEARCH_PASSWORD=angry-elk
+      - ELASTICSEARCH_URL=http://elasticsearch:9200
+      - KIBANA_INDEX=.kibana
     depends_on: ['elasticsearch']
     ports: ['5601:5601']
     deploy:
