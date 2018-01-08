@@ -1,7 +1,7 @@
 version: "3.2"
 
 networks:
-  elk-network:
+  elk:
     external: true
 
 services:
