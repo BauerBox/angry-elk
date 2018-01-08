@@ -9,7 +9,6 @@ networks:
 services:
   kibana:
     image: angry-elk/kibana
-    container_name: kibana
     environment:
       - ELASTICSEARCH_USERNAME=kibana
       - ELASTICSEARCH_PASSWORD=angry-elk
