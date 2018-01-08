@@ -4,10 +4,6 @@ version: '3.2'
 volumes:
   esdata1:
     driver: local
-  esdata2:
-    driver: local
-  esdata3:
-    driver: local
 
 # Networks
 networks:
@@ -46,64 +42,6 @@ services:
       - 9200:9200
     networks:
       - elk
-
-#  # Node 2
-#  elasticsearch-2:
-#    image: angry-elk/elasticsearch
-#    container_name: elasticsearch-2
-#    environment:
-#      - cluster.name=angry-elk-es
-#      - node.name=es-2
-#      #- bootstrap.memory_lock=true
-#      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
-#      - ELASTIC_PASSWORD=angry-elk
-#      - "discovery.zen.ping.unicast.hosts=elasticsearch,elasticsearch-3"
-#    stop_grace_period: 1m30s
-#    deploy:
-#      replicas: 1
-#      resources:
-#        limits:
-#          memory: 1G
-#      restart_policy:
-#        condition: any
-#        delay: 30s
-#    ulimits:
-#      memlock:
-#        soft: -1
-#        hard: -1
-#    volumes:
-#      - esdata2:/usr/share/elasticsearch/data
-#    networks:
-#      - elk
-#
-#  # Node 3
-#  elasticsearch-3:
-#    image: angry-elk/elasticsearch
-#    container_name: elasticsearch-3
-#    environment:
-#      - cluster.name=angry-elk-es
-#      - node.name=es-3
-#      #- bootstrap.memory_lock=true
-#      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
-#      - ELASTIC_PASSWORD=angry-elk
-#      - "discovery.zen.ping.unicast.hosts=elasticsearch,elasticsearch-2"
-#    stop_grace_period: 1m30s
-#    deploy:
-#      replicas: 1
-#      resources:
-#        limits:
-#          memory: 1G
-#      restart_policy:
-#        condition: any
-#        delay: 30s
-#    ulimits:
-#      memlock:
-#        soft: -1
-#        hard: -1
-#    volumes:
-#      - esdata3:/usr/share/elasticsearch/data
-#    networks:
-#      - elk
 
   # Kibana
   kibana:
