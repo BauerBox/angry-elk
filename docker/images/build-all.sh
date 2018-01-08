@@ -1,15 +1,10 @@
 #!/bin/sh
 
-# Where am I?
-OWD="$( pwd )"
-DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
-cd ${DIR}
-
 # Image Prefix
 prefix="angry-elk"
 
 # Log
-echo "Build logs will be recorded to: ${DIR}/build.log"
+echo "Build logs will be recorded to: build.log"
 
 # Iterate directory
 for path in ./*; do
@@ -26,10 +21,10 @@ for path in ./*; do
     echo "Building image: ${prefix}/${image}"
 
     # Run
-    docker build -t "${prefix}/${image}" "${path}" >> ${DIR}/build.log
+    docker build -t "${prefix}/${image}" "${path}" >> build.log
     if [ $? -ne 0 ]; then
         echo "> Image ${prefix}/${image} failed to build!"
-        echo "> Check ${DIR}/build.log for details"
+        echo "> Check build.log for details"
     else
         echo "> Image built successfully!"
     fi
@@ -40,6 +35,3 @@ echo ""
 echo "All angry ELK images have been built!"
 echo "Go forth and take over the world!"
 echo "#hugops #happyops"
-
-# Back to Kansas
-cd ${OWD}
