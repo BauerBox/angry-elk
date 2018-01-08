@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#!/bin/sh
 
 # Where am I?
 OWD="$( pwd )"
@@ -7,6 +7,9 @@ cd ${DIR}
 
 # Image Prefix
 prefix="angry-elk"
+
+# Log
+echo "Build logs will be recorded to: ${DIR}/build.log"
 
 # Iterate directory
 for path in ./*; do
@@ -23,7 +26,13 @@ for path in ./*; do
     echo "Building image: ${prefix}/${image}"
 
     # Run
-    docker build -t "${prefix}/${image}" "${path}"
+    docker build -t "${prefix}/${image}" "${path}" >> ${DIR}/build.log
+    if [ $? -ne 0 ]; then
+        echo "> Image ${prefix}/${image} failed to build!"
+        echo "> Check ${DIR}/build.log for details"
+    else
+        echo "> Image built successfully!"
+    fi
 done
 
 # All Done!
