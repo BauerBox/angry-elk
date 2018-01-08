@@ -11,6 +11,7 @@ services:
     - elk
     environment: []
     deploy:
+      mode: global # Just so we get more logs :-)
       replicas: 1
       resources:
         limits:
