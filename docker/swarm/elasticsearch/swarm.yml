@@ -1,0 +1,118 @@
+version: '3.2'
+
+# Volumes
+volumes:
+  esdata1:
+    driver: local
+  esdata2:
+    driver: local
+  esdata3:
+    driver: local
+
+# Networks
+networks:
+  elk:
+    external: true
+
+# Services
+services:
+  # Node 1
+  elasticsearch:
+    image: angry-elk/elasticsearch
+    container_name: elasticsearch
+    environment:
+      - cluster.name=angry-elk-es
+      - node.name=es-1
+      #- bootstrap.memory_lock=true
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+      - ELASTIC_PASSWORD=angry-elk
+      - "discovery.zen.ping.unicast.hosts=elasticsearch-2,elasticsearch-3"
+    stop_grace_period: 1m30s
+    deploy:
+      placement:
+        constraints:
+        - node.role == worker
+        - node.labels.name == worker1
+      replicas: 1
+      resources:
+        limits:
+          memory: 1G
+      restart_policy:
+        condition: any
+        delay: 30s
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+    volumes:
+      - esdata1:/usr/share/elasticsearch/data
+    ports:
+      - 9200:9200
+    networks:
+      - elk
+
+  # Node 2
+  elasticsearch-2:
+    image: angry-elk/elasticsearch
+    container_name: elasticsearch-2
+    environment:
+      - cluster.name=angry-elk-es
+      - node.name=es-2
+      #- bootstrap.memory_lock=true
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+      - ELASTIC_PASSWORD=angry-elk
+      - "discovery.zen.ping.unicast.hosts=elasticsearch,elasticsearch-3"
+    stop_grace_period: 1m30s
+    deploy:
+      placement:
+        constraints:
+        - node.role == worker
+        - node.labels.name == worker2
+      replicas: 1
+      resources:
+        limits:
+          memory: 1G
+      restart_policy:
+        condition: any
+        delay: 30s
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+    volumes:
+      - esdata2:/usr/share/elasticsearch/data
+    networks:
+      - elk
+
+  # Node 3
+  elasticsearch-3:
+    image: angry-elk/elasticsearch
+    container_name: elasticsearch-3
+    environment:
+      - cluster.name=angry-elk-es
+      - node.name=es-3
+      #- bootstrap.memory_lock=true
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+      - ELASTIC_PASSWORD=angry-elk
+      - "discovery.zen.ping.unicast.hosts=elasticsearch,elasticsearch-2"
+    stop_grace_period: 1m30s
+    deploy:
+      placement:
+        constraints:
+        - node.role == worker
+        - node.labels.name == worker3
+      replicas: 1
+      resources:
+        limits:
+          memory: 1G
+      restart_policy:
+        condition: any
+        delay: 30s
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+    volumes:
+      - esdata3:/usr/share/elasticsearch/data
+    networks:
+      - elk
