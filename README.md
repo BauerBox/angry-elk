@@ -1,9 +1,18 @@
 # Angry ELK, Happy Ops
 Source Repository for Meetup 1/8/2018 - Any Elk, Happy Ops
 
+## How to use
+
+### Compose
+If you just wish to use the images and toy around with the stack on your own, you can use the `build-all.sh` script in the `docker/images` directory to build the images locally.  Once built, you can use the `docker-compose.yml` file in the `docker/compose` directory to stand up the services locally.
+
+### Swarm
+If you want to use the images in a (local) docker Swarm, you can use the `setup-swarm.sh` file in the `docker/swarm` directory to setup a local swarm
+
 ## Assumptions
- It is assumed that docker is logging via the `json-file` driver...
- This can be setup by applying the following setting to your `daemon.json` file (for singe instances).
+It is assumed that docker is logging via the `json-file` driver...
+This can be setup by applying the following setting to your `daemon.json` file (for singe instances).
+See the official documentation here: https://docs.docker.com/engine/admin/logging/overview/ 
  
  ```json
 {
@@ -37,6 +46,10 @@ All links are assuming version `6.1` for Elastic.co products.
 * Logstash Configuration (Docker-specific): https://www.elastic.co/guide/en/logstash/current/_configuring_logstash_for_docker.html
 * Logstash Configuration: https://www.elastic.co/guide/en/logstash/current/configuration.html
 
+### Docker Swarm Testing
+* Docker Machine: https://docs.docker.com/machine/install-machine/
+
+
 ### ELK Stack
 * Elastic.co Docker Stack: https://github.com/elastic/stack-docker
 
@@ -50,3 +63,4 @@ All links are assuming version `6.1` for Elastic.co products.
 * Github User: kiritbasu
   * Provided source for the custom log generator
   * https://github.com/kiritbasu/Fake-Apache-Log-Generator
+* Portainer: https://portainer.io

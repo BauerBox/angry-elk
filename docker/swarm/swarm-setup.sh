@@ -10,7 +10,7 @@ checkMachine() {
     # Make sure machine exists
     if ! `docker-machine status ${machine} > /dev/null`; then
         echo "> Could not find machine ${machine}...  Creating now..."
-        docker-machine create --driver virtualbox ${machine}
+        docker-machine create --virtualbox-memory 4096 --virtualbox-memory "2" --driver virtualbox ${machine}
     fi
 
     # Make sure machine is running
@@ -47,6 +47,9 @@ done
 # Get Manager IP
 ip=$(docker-machine ip manager1)
 
+# Ensure Portainer directory exists
+docker-machine ssh manager1 '[ -d /opt/portainer ] || sudo mkdir /opt/portainer'
+
 # Check manager
 echo "Checking Manager Node"
 echo "> Manager IP: ${ip}"
@@ -77,6 +80,12 @@ for node in "${nodes[@]}"; do
 
     # Ensure labels
     docker-machine ssh manager1 docker node update --label-add name=${node} $(docker-machine ssh manager1 docker node ls -f name=${node} -q)
+
+    # Ensure log driver
+    docker-machine ssh ${node} 'echo "{\"log-driver\":\"json-file\"}" > /home/docker/daemon.json && sudo cp /home/docker/daemon.json /etc/docker/daemon.json && sudo /etc/init.d/docker restart'
+
+    # Ensure max_map_count setting
+    docker-machine ssh ${node} sudo sysctl -w vm.max_map_count=262144
 done
 
 # Check Repo
@@ -89,11 +98,18 @@ done
 
 # Check network
 echo "Checking network 'elk'..."
-network=$(docker-machine ssh manager1 docker network ls -f name=elk)
+network=$(docker-machine ssh manager1 docker network ls -f name=elk -q)
 if [ "${network}" == "" ]; then
     echo "> Creating network..."
-    docker-machine ssh manager1 docker network create --attachable --scope swarm elk
+    docker-machine ssh manager1 docker network create --driver overlay --attachable --scope swarm elk
 fi
+
+# Deploy services
+services=( elasticsearch logstash kibana logspout loggen )
+for service in "${services[@]}"; do
+    echo "Deploying service: ${service}"
+    docker-machine ssh manager1 docker stack deploy -c /home/docker/angry-elk/docker/swarm/${service}/swarm.yml elk
+done
 
 # Announce the status
 echo "Your swarm is setup and ready! Here's your node list:"
